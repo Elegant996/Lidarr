@@ -72,4 +72,5 @@ jobs:
         platforms: linux/${{ matrix.arch }}
         push: true
         tags: |
-          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ steps.env.outputs.VERSION }}
+          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ steps.env.outputs.VERSION }}-${{ env.BRANCH }}
+          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ env.BRANCH }}
