@@ -1,13 +1,13 @@
 FROM alpine:3.19 as stage
 
-ARG BRANCH
+ARG PACKAGE
 ARG VERSION
 
 RUN apk add --no-cache \
     curl \
     xz
 RUN mkdir -p /opt/Lidarr
-RUN curl -o /tmp/lidarr.tar.gz -sL "https://lidarr.servarr.com/v1/update/${BRANCH}/updatefile?version=${VERSION}&os=linuxmusl&runtime=netcore&arch=x64"
+RUN curl -o /tmp/lidarr.tar.gz -sL "${PACKAGE}"
 RUN tar xzf /tmp/lidarr.tar.gz -C /opt/Lidarr --strip-components=1
 RUN rm -rf /opt/Lidarr/Lidarr.Update /tmp/*
 
@@ -39,6 +39,9 @@ ENV HOME /data
 WORKDIR $HOME
 CMD ["/opt/Lidarr/Lidarr", "-nobrowser", "-data=/data"]
 
-LABEL org.opencontainers.image.source="https://github.com/Lidarr/Lidarr"
 LABEL org.opencontainers.image.description="Looks and smells like Sonarr but made for music."
 LABEL org.opencontainers.image.licenses="GPL-3.0-only"
+LABEL org.opencontainers.image.source="https://github.com/Lidarr/Lidarr"
+LABEL org.opencontainers.image.title="Lidarr"
+LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.url="https://lidarr.audio/"
