@@ -5,6 +5,8 @@ Docker
 -----------------------------------------------
 This repo will periodically check Lidarr for updates and build a container image from scratch using an Alpine base layout:
 
+For `master` branch releases use:
 ```
-docker pull ghcr.io/elegant996/lidarr:latest
+docker pull ghcr.io/elegant996/lidarr: 2.2.5.4141
+docker pull ghcr.io/elegant996/lidarr:master
 ```
