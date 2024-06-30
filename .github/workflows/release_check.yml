@@ -17,7 +17,7 @@ jobs:
   masterBuild:
     name: 'Build master branch'
     uses:  ./.github/workflows/build_release.yml
-    if: ${{ needs.masterPoll.outputs.updateRequired == true }}
+    if: ${{ needs.masterPoll.outputs.updateRequired == 'true' }}
     needs: 
     - masterPoll
     with:
@@ -33,7 +33,7 @@ jobs:
   developBuild:
     name: 'Build develop branch'
     uses:  ./.github/workflows/build_release.yml
-    if: ${{ needs.developPoll.outputs.updateRequired == true }}
+    if: ${{ needs.developPoll.outputs.updateRequired == 'true' }}
     needs: 
     - developPoll
     with:
