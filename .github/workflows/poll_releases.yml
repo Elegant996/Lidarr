@@ -43,7 +43,8 @@ jobs:
     - name: Get upstream version
       id: upstream
       run: |
-        VERSION=$(curl -sL "https://lidarr.servarr.com/v1/update/${BRANCH}/changes?runtime=netcore&os=linuxmusl" | jq -r 'first(.[]) | .version')
+        VERSION=$(curl -sL "https://lidarr.servarr.com/v1/update/${BRANCH}/changes?runtime=netcore&os=linuxmusl" \
+          | jq -r 'first(.[]) | .version')
 
         echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
       env:
@@ -56,7 +57,7 @@ jobs:
           --url "https://api.github.com/repos/Elegant996/Lidarr/releases" \
           --header "Accept: application/vnd.github+json" \
           --header "Authorization: token ${{ github.token }}" \
-          | jq -r '.[] | "export TAG=\(.tag_name)"')"
+          | jq -r 'first(.[]) | "export TAG=\(.tag_name)"')"
 
         echo "VERSION=${TAG//v}" >> $GITHUB_OUTPUT
 
