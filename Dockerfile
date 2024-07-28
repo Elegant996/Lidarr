@@ -43,5 +43,5 @@ LABEL org.opencontainers.image.description="Looks and smells like Sonarr but mad
 LABEL org.opencontainers.image.licenses="GPL-3.0-only"
 LABEL org.opencontainers.image.source="https://github.com/Lidarr/Lidarr"
 LABEL org.opencontainers.image.title="Lidarr"
-LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.version=${VERSION}
 LABEL org.opencontainers.image.url="https://lidarr.audio/"
