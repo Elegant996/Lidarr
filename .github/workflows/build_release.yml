@@ -77,7 +77,9 @@ jobs:
         platforms: linux/${{ matrix.arch }}
         push: true
         tags: |
+          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.releaseVersion }}-${{ inputs.branch }}
           ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.releaseVersion }}
+          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.branch }}
           ghcr.io/${{ steps.repo_slug.outputs.result }}:latest
 
     # Temp workaround for failed builds
@@ -98,6 +100,7 @@ jobs:
         platforms: linux/${{ matrix.arch }}
         push: true
         tags: |
+          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.releaseVersion }}-${{ inputs.branch }}
           ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.releaseVersion }}
           ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.branch }}
           ghcr.io/${{ steps.repo_slug.outputs.result }}:latest
