@@ -1,4 +1,4 @@
-FROM alpine:3.19 as stage
+FROM alpine:3.20 as stage
 
 ARG PACKAGE
 ARG VERSION
@@ -11,7 +11,7 @@ RUN curl -o /tmp/lidarr.tar.gz -sL "${PACKAGE}"
 RUN tar xzf /tmp/lidarr.tar.gz -C /opt/Lidarr --strip-components=1
 RUN rm -rf /opt/Lidarr/Lidarr.Update /tmp/*
 
-FROM alpine:3.19 as mirror
+FROM alpine:3.20 as mirror
 
 RUN mkdir -p /out/etc/apk && cp -r /etc/apk/* /out/etc/apk/
 RUN apk add --no-cache --initdb -p /out \
