@@ -7,7 +7,7 @@ This repo will periodically check Lidarr for updates and build a container image
 
 For `master` branch releases use:
 ```
-docker pull ghcr.io/elegant996/lidarr:2.3.3.4204
+docker pull ghcr.io/elegant996/lidarr:2.4.3.4248
 docker pull ghcr.io/elegant996/lidarr:master
 ```
 
