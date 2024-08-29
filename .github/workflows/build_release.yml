@@ -6,12 +6,12 @@ on:
         description: 'App branch'
         type: string
         default: 'master'
-      existingTag:
-        description: 'Current release tag'
+      currentVersion:
+        description: 'Current version'
         type: string
         required: true
-      releaseVersion:
-        description: 'Version to be released'
+      upstreamVersion:
+        description: 'Upstream version'
         type: string
         required: true
 
@@ -31,19 +31,7 @@ jobs:
           - arch: amd64
             os: ubuntu-latest
 
-    steps:
-    - name: Set environment variables
-      id: env
-      run: |
-        PACKAGE=$(curl -sL --request GET \
-          --url "https://lidarr.servarr.com/v1/update/${BRANCH}/changes?runtime=netcore&os=linuxmusl" \
-          | jq -r 'first(.[]) | select(.version==env.VERSION) | .url')
-
-        echo "package=${PACKAGE}" >> $GITHUB_OUTPUT
-      env:
-        BRANCH: ${{ inputs.branch }}
-        VERSION: ${{ inputs.releaseVersion }}
-        
+    steps:        
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v3
       with:
@@ -60,7 +48,14 @@ jobs:
     
     - uses: actions/checkout@v4
       with:
-        ref: 'v${{ inputs.releaseVersion }}'
+        ref: 'v${{ inputs.upstreamVersion }}'
+
+    - uses: robinraju/release-downloader@v1
+      with:
+        repository: 'Lidarr/Lidarr'
+        tag: 'v${{ inputs.upstreamVersion }}'
+        fileName: 'Lidarr.${{ inputs.branch }}.${{ inputs.upstreamVersion }}.linux-musl-core-x64.tar.gz'
+        out-file-path: 'lidarr.tar.gz'
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -71,14 +66,13 @@ jobs:
       id: buildx1
       with:
         build-args: |
-          PACKAGE=${{ steps.env.outputs.package }}
-          VERSION=${{ inputs.releaseVersion }}
+          VERSION=${{ inputs.upstreamVersion }}
         context: .
         platforms: linux/${{ matrix.arch }}
         push: true
         tags: |
-          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.releaseVersion }}-${{ inputs.branch }}
-          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.releaseVersion }}
+          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.upstreamVersion }}-${{ inputs.branch }}
+          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.upstreamVersion }}
           ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.branch }}
           ghcr.io/${{ steps.repo_slug.outputs.result }}:latest
 
@@ -94,14 +88,13 @@ jobs:
       if: steps.buildx1.outcome != 'success'
       with:
         build-args: |
-          PACKAGE=${{ steps.env.outputs.package }}
-          VERSION=${{ inputs.releaseVersion }}
+          VERSION=${{ inputs.upstreamVersion }}
         context: .
         platforms: linux/${{ matrix.arch }}
         push: true
         tags: |
-          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.releaseVersion }}-${{ inputs.branch }}
-          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.releaseVersion }}
+          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.upstreamVersion }}-${{ inputs.branch }}
+          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.upstreamVersion }}
           ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.branch }}
           ghcr.io/${{ steps.repo_slug.outputs.result }}:latest
 
@@ -110,15 +103,15 @@ jobs:
       uses: metcalfc/changelog-generator@v4.3.1
       with:
         mytoken: ${{ github.token }}
-        head-ref: 'v${{ inputs.releaseVersion }}'
-        base-ref: '${{ inputs.existingTag }}'
+        head-ref: 'v${{ inputs.upstreamVersion }}'
+        base-ref: 'v${{ inputs.currentVersion }}'
 
     - name: Publish release
       uses: ncipollo/release-action@v1.14.0
       with:
         prerelease: ${{ inputs.branch != 'master' }}
-        name: '${{ inputs.releaseVersion }}'
-        tag: 'v${{ inputs.releaseVersion }}'
+        name: '${{ inputs.upstreamVersion }}'
+        tag: 'v${{ inputs.upstreamVersion }}'
         body: |
           Changes in this Release: 
           ${{ steps.changelog.outputs.changelog }}

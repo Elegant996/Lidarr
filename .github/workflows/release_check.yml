@@ -21,8 +21,8 @@ jobs:
     needs: 
     - masterPoll
     with:
-      existingTag: '${{ needs.masterPoll.outputs.latestTag }}'
-      releaseVersion: '${{ needs.masterPoll.outputs.upstreamVersion }}'
+      currentVersion: '${{ needs.masterPoll.outputs.currentVersion }}'
+      upstreamVersion: '${{ needs.masterPoll.outputs.upstreamVersion }}'
 
   developPoll:
     name: 'Check develop branch'
@@ -40,5 +40,5 @@ jobs:
     - developPoll
     with:
       branch: 'develop'
-      existingTag: '${{ needs.developPoll.outputs.latestTag }}'
-      releaseVersion: '${{ needs.developPoll.outputs.upstreamVersion }}'
+      currentVersion: '${{ needs.developPoll.outputs.currentVersion }}'
+      upstreamVersion: '${{ needs.developPoll.outputs.upstreamVersion }}'

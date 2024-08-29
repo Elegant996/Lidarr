@@ -1,20 +1,14 @@
-FROM alpine:3.20 as stage
+FROM scratch AS source
 
-ARG PACKAGE
-ARG VERSION
+ADD ./lidarr.tar.gz /lidarr
 
-RUN apk add --no-cache \
-    curl \
-    xz
-RUN mkdir -p /opt/Lidarr
-RUN curl -o /tmp/lidarr.tar.gz -sL "${PACKAGE}"
-RUN tar xzf /tmp/lidarr.tar.gz -C /opt/Lidarr --strip-components=1
-RUN rm -rf /opt/Lidarr/Lidarr.Update /tmp/*
+FROM alpine:3.20 AS build-sysroot
 
-FROM alpine:3.20 as mirror
+# Prepare sysroot
+RUN mkdir -p /sysroot/etc/apk && cp -r /etc/apk/* /sysroot/etc/apk/
 
-RUN mkdir -p /out/etc/apk && cp -r /etc/apk/* /out/etc/apk/
-RUN apk add --no-cache --initdb -p /out \
+# Fetch runtime dependencies
+RUN apk add --no-cache --initdb -p /sysroot \
     alpine-baselayout \
     busybox \
     chromaprint \
@@ -24,14 +18,18 @@ RUN apk add --no-cache --initdb -p /out \
     libmediainfo \
     sqlite-libs \
     tzdata
-RUN rm -rf /out/etc/apk /out/lib/apk /out/var/cache
+RUN rm -rf /sysroot/etc/apk /sysroot/lib/apk /sysroot/var/cache
+
+# Install Lidarr to new system root
+RUN mkdir -p /sysroot/opt/Lidarr
+COPY --from=source /lidarr /sysroot/opt/Lidarr
+RUN rm -f /sysroot/opt/Lidarr/Lidarr.Update
 
 FROM scratch
 ENTRYPOINT []
 CMD []
 WORKDIR /
-COPY --from=mirror /out/ /
-COPY --from=stage /opt/Lidarr /opt/Lidarr/
+COPY --from=build-sysroot /sysroot/ /
 
 EXPOSE 8686 6868
 VOLUME [ "/data" ]
