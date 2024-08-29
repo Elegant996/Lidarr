@@ -83,8 +83,8 @@ jobs:
       uses: jacobtomlinson/gha-find-replace@v3
       if: inputs.branch == 'develop'
       with:
-        find: '${{ steps.current.outputs.version }}'
-        replace: '${{ steps.upstream.outputs.prereleaseVersion }}'
+        find: '${{ steps.current.outputs.prereleaseVersion }}'
+        replace: '${{ steps.upstream.outputs.version }}'
         include: 'README.md'
         regex: false
 
@@ -92,8 +92,8 @@ jobs:
       uses: jacobtomlinson/gha-find-replace@v3
       if: inputs.branch != 'develop'
       with:
-        find: '${{ steps.current.outputs.version }}'
-        replace: '${{ steps.upstream.outputs.releaseVersion }}'
+        find: '${{ steps.current.outputs.releaseVersion }}'
+        replace: '${{ steps.upstream.outputs.version }}'
         include: 'README.md'
         regex: false
 
