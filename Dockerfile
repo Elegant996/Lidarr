@@ -1,6 +1,6 @@
 FROM scratch AS source
 
-ADD ./lidarr.tar.gz /lidarr
+ADD ./lidarr.tar.gz /
 
 FROM alpine:3.20 AS build-sysroot
 
@@ -22,20 +22,20 @@ RUN rm -rf /sysroot/etc/apk /sysroot/lib/apk /sysroot/var/cache
 
 # Install Lidarr to new system root
 RUN mkdir -p /sysroot/opt/Lidarr
-COPY --from=source /lidarr /sysroot/opt/Lidarr
+COPY --from=source /Lidarr /sysroot/opt/Lidarr
 RUN rm -f /sysroot/opt/Lidarr/Lidarr.Update
 
 FROM scratch
-ENTRYPOINT []
-CMD []
-WORKDIR /
 COPY --from=build-sysroot /sysroot/ /
 
 EXPOSE 8686 6868
 VOLUME [ "/data" ]
-ENV HOME /data
+ENV HOME=/data
 WORKDIR $HOME
+ENTRYPOINT []
 CMD ["/opt/Lidarr/Lidarr", "-nobrowser", "-data=/data"]
+
+ARG VERSION
 
 LABEL org.opencontainers.image.description="Looks and smells like Sonarr but made for music."
 LABEL org.opencontainers.image.licenses="GPL-3.0-only"
