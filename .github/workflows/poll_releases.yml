@@ -44,7 +44,7 @@ jobs:
       id: upstream
       run: |
         TAG=$(curl -sL --request GET \
-          --url "https://api.github.com/repos/Lidarr/Lidarr/releases" \
+          --url "${{ github.api_url }}/repos/Lidarr/Lidarr/releases" \
           --header "Accept: application/vnd.github+json" \
           --header "Authorization: token ${{ github.token }}" \
           | jq --argjson DEVELOP ${{ inputs.branch == 'develop' }} \
