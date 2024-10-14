@@ -4,7 +4,7 @@ on:
 
   # Hourly
   schedule:
-    - cron:  '0 * * * *'
+    - cron:  '0 0 * * *'
 
   # Manually
   workflow_dispatch:
@@ -21,7 +21,6 @@ jobs:
     needs: 
     - masterPoll
     with:
-      currentVersion: '${{ needs.masterPoll.outputs.currentVersion }}'
       upstreamVersion: '${{ needs.masterPoll.outputs.upstreamVersion }}'
 
   developPoll:
@@ -40,5 +39,4 @@ jobs:
     - developPoll
     with:
       branch: 'develop'
-      currentVersion: '${{ needs.developPoll.outputs.currentVersion }}'
       upstreamVersion: '${{ needs.developPoll.outputs.upstreamVersion }}'
