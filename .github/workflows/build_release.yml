@@ -117,7 +117,8 @@ jobs:
           Changes in this Release: 
           ${{ steps.changelog.outputs.changelog }}
 
-    - run: |
+    - name: Update repository variables
+      run: |
         if [[ ${{ inputs.branch == 'master' }} ]]; then
           gh variable set RELEASE_VERSION --body "${{ inputs.upstreamVersion }}"
         else

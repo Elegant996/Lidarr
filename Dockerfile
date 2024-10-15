@@ -26,14 +26,14 @@ COPY --from=source /Lidarr /sysroot/opt/Lidarr
 RUN rm -rf /sysroot/opt/Lidarr/Lidarr.Update
 
 # Install entrypoint
-COPY --chmod 755 ./entrypoint.sh /sysroot/entrypoint.sh
+COPY --chmod=755 ./entrypoint.sh /sysroot/entrypoint.sh
 
 # Build image
 FROM scratch
 COPY --from=build-sysroot /sysroot/ /
 
 EXPOSE 8686 6868
-VOLUME [ "/data" ]
+VOLUME ["/data"]
 ENV HOME=/data
 WORKDIR $HOME
 ENTRYPOINT ["/entrypoint.sh"]
