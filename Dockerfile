@@ -2,7 +2,7 @@ FROM scratch AS source
 
 ADD ./lidarr.tar.gz /
 
-FROM alpine:3.20 AS build-sysroot
+FROM alpine:3.21 AS build-sysroot
 
 # Prepare sysroot
 RUN mkdir -p /sysroot/etc/apk && cp -r /etc/apk/* /sysroot/etc/apk/
@@ -38,12 +38,3 @@ ENV HOME=/data
 WORKDIR $HOME
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/opt/Lidarr/Lidarr", "-nobrowser", "-data=/data"]
-
-ARG VERSION
-
-LABEL org.opencontainers.image.description="Looks and smells like Sonarr but made for music."
-LABEL org.opencontainers.image.licenses="GPL-3.0-only"
-LABEL org.opencontainers.image.source="https://github.com/Lidarr/Lidarr"
-LABEL org.opencontainers.image.title="Lidarr"
-LABEL org.opencontainers.image.version=${VERSION}
-LABEL org.opencontainers.image.url="https://lidarr.audio/"

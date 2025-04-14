@@ -1,81 +1,273 @@
 name: Poll branch releases
 on:
-  workflow_call:
-    inputs:
-      branch:
-        description: 'App branch'
-        type: string
-        default: 'master'
+  push:
 
-    outputs:
-      updateRequired:
-        description: 'New version found'
-        value: ${{ jobs.check-upstream.outputs.update }}
-      upstreamVersion:
-        description: 'Upstream version'
-        value: '${{ jobs.check-upstream.outputs.version }}'
+  # Daily
+  schedule:
+    - cron:  '0 0 * * *'
+
+  # Manually
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
+  define-matrix:
+    runs-on: ubuntu-latest
+
+    outputs:
+      branches: ${{ steps.branches.outputs.matrix }}
+
+    steps:
+      - name: Define branches
+        id: branches
+        run: |
+          echo 'matrix={"include":[{"branch":"master","prerelease":"false"},{"branch":"develop","prerelease":"true"}]}' >> $GITHUB_OUTPUT
+
   check-upstream:
     name: Check upstream version
     runs-on: ubuntu-latest
-
-    env:
-      currentVersion: ${{ inputs.branch == 'master' && vars.RELEASE_VERSION || vars.PRERELEASE_VERSION }}
-
-    permissions:
-      contents: write
+    needs: [define-matrix]
 
     strategy:
       fail-fast: true
-      matrix:
-        arch: ["amd64"]
-        include:
-          - arch: amd64
-            os: ubuntu-latest
+      matrix: ${{ fromJSON(needs.define-matrix.outputs.branches) }}
 
     outputs:
-      update: ${{ steps.check_tag.outputs.exists == 'false' }}
-      version: '${{ steps.upstream.outputs.version }}'
+      release_branch: ${{ steps.releases.outputs.release_branch }}
+      release_version: ${{ steps.releases.outputs.release_version }}
+      prerelease_branch: ${{ steps.releases.outputs.prerelease_branch }}
+      prerelease_version: ${{ steps.releases.outputs.prerelease_version }}
 
     steps:
-    - name: Get upstream (pre)release
-      id: upstream
-      run: |
-        TAG=$(curl -sL --request GET \
-          --url "${{ github.api_url }}/repos/Lidarr/Lidarr/releases" \
-          --header "Accept: application/vnd.github+json" \
-          --header "Authorization: token ${{ github.token }}" \
-          | jq --argjson DEVELOP ${{ inputs.branch == 'develop' }} \
-          -r 'map(select(.prerelease==$DEVELOP)) | first | .tag_name')
+      - name: Get upstream (pre)release
+        id: upstream
+        run: |
+          TAG=$(curl -sL --request GET \
+            --url "${{ github.api_url }}/repos/Lidarr/Lidarr/releases" \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: token ${{ github.token }}" \
+            | jq --argjson pr ${{ matrix.prerelease }} \
+            -r 'map(select(.prerelease==$pr)) | first | .tag_name')
 
-        echo "version=${TAG//v}" >> $GITHUB_OUTPUT
-      env:
-        DEVELOP: ${{ inputs.branch == 'develop' }}
+          echo "version=${TAG//v}" >> $GITHUB_OUTPUT
 
-    - name: Check if tag exists
-      uses: mukunku/tag-exists-action@v1.6.0
-      id: check_tag
-      with:
-        tag: 'v${{ steps.upstream.outputs.version }}'
+      - name: Check if tag exists
+        uses: mukunku/tag-exists-action@v1.6.0
+        id: check_tag
+        with:
+          tag: 'v${{ steps.upstream.outputs.version }}'
 
-    - uses: actions/checkout@v4
-      if: steps.check_tag.outputs.exists == 'false'
-  
-    - name: Update Readme
-      uses: jacobtomlinson/gha-find-replace@v3
-      if: steps.check_tag.outputs.exists == 'false'
-      with:
-        find: '${{ env.currentVersion }}'
-        replace: '${{ steps.upstream.outputs.version }}'
-        include: 'README.md'
-        regex: false
+      - name: Store releases
+        id: releases
+        run: |
+            echo "${prerelease}_branch=${{ matrix.branch }}" >> "$GITHUB_OUTPUT"
+            echo "${prerelease}_version=${version}" >> "$GITHUB_OUTPUT"
+        env:
+          prerelease: ${{ !fromJSON(matrix.prerelease) && 'release' || 'prerelease' }}
+          version: ${{ !fromJSON(steps.check_tag.outputs.exists) && steps.upstream.outputs.version || '' }}
 
-    - name: Push changes
-      uses: EndBug/add-and-commit@v9
-      if: steps.check_tag.outputs.exists == 'false'
-      with:
-        committer_name: GitHub Actions
-        committer_email: actions@github.com
-        message: 'docs: Bump ${{ inputs.branch }} image version to ${{ steps.upstream.outputs.version }}'
-        tag: 'v${{ steps.upstream.outputs.version }}'
+  commit-and-push:
+    name: Push commits and release upstream version
+    runs-on: ubuntu-latest
+    needs: [check-upstream]
+
+    outputs:
+      tags: ${{ steps.tags.outputs.matrix }}
+
+    # Cannot use matrix in this instance
+    env:
+      release_branch: ${{ needs.check-upstream.outputs.release_branch }}
+      release_version: ${{ needs.check-upstream.outputs.release_version }}
+      prerelease_branch: ${{ needs.check-upstream.outputs.prerelease_branch }}
+      prerelease_version: ${{ needs.check-upstream.outputs.prerelease_version }}
+
+    steps:
+      - uses: actions/checkout@v4
+    
+      - name: Update Readme (release)
+        if: env.release_version != ''
+        uses: jacobtomlinson/gha-find-replace@v3
+        with:
+          find: ${{ vars.RELEASE_VERSION }}
+          replace: ${{ env.release_version }}
+          include: 'README.md'
+          regex: false
+
+      - name: Commit changes (release)
+        if: env.release_version != ''
+        uses: EndBug/add-and-commit@v9
+        with:
+          committer_name: GitHub Actions
+          committer_email: actions@github.com
+          message: 'docs: Bump ${{ env.release_branch }} image version to ${{ env.release_version }}'
+          push: false
+          tag: 'v${{ env.release_version }}'
+
+      - name: Update Readme (prerelease)
+        if: env.prerelease_version != ''
+        uses: jacobtomlinson/gha-find-replace@v3
+        with:
+          find: ${{ vars.PRERELEASE_VERSION }}
+          replace: ${{ env.prerelease_version }}
+          include: 'README.md'
+          regex: false
+
+      - name: Commit changes (prerelease)
+        if: env.prerelease_version != ''
+        uses: EndBug/add-and-commit@v9
+        with:
+          committer_name: GitHub Actions
+          committer_email: actions@github.com
+          message: 'docs: Bump ${{ env.prerelease_branch }} image version to ${{ env.prerelease_version }}'
+          push: false
+          tag: 'v${{ env.prerelease_version }}'
+
+      - name: Define tags
+        id: tags
+        run: |
+          if [ -z "${release_version}" ] && [ -z "${prerelease_version}" ]; then
+            echo 'matrix=[{"tag":"v${{ env.release_version }}","version":"${{ env.release_version }}","branch":"${{ env.release_branch }}","prerelease":"false"},{"tag":"v${{ env.prerelease_version }}","version":"${{ env.prerelease_version }}","branch":"${{ env.prerelease_branch }}","prerelease":"true"}]' >> $GITHUB_OUTPUT
+          elif [ -z "${prerelease_version}" ]; then
+            echo 'matrix=[{"tag":"v${{ env.release_version }}","version":"${{ env.release_version }}","branch":"${{ env.release_branch }}","prerelease":"false"}]' >> $GITHUB_OUTPUT
+          elif [ -z "${release_version}" ]; then
+            echo 'matrix=[{"tag":"v${{ env.prerelease_version }}","version":"${{ env.prerelease_version }}","branch":"${{ env.prerelease_branch }}","prerelease":"true"}]' >> $GITHUB_OUTPUT
+          else
+            echo "There is no GitHub tag reference, skipping"
+          fi
+
+      - name: Push commits
+        run: |
+          git push
+
+  publish-release:
+    name: Publish releases
+    runs-on: ubuntu-latest
+    needs: [commit-and-push]
+
+    strategy:
+      fail-fast: true
+      max-parallel: 1
+      matrix:
+        include: ${{ fromJSON(needs.commit-and-push.outputs.tags) }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate changelog
+        id: changelog
+        uses: metcalfc/changelog-generator@v4.6.2
+        with:
+          mytoken: ${{ github.token }}
+          head-ref: ${{ matrix.tag }}
+          base-ref: ${{ !fromJSON(matrix.prerelease) && env.prerelease-tag || '' }}
+        env:
+          prerelease-tag: 'v${{ vars.PRERELEASE_VERSION }}'
+
+      - name: Publish release
+        uses: ncipollo/release-action@v1
+        with:
+          prerelease: ${{ fromJSON(matrix.prerelease) }}
+          name: ${{ matrix.version }}
+          tag: ${{ matrix.tag }}
+          body: |
+            Changes in this Release: 
+            ${{ steps.changelog.outputs.changelog }}
+
+      - name: Update repository variables
+        run: |
+          if [[ ${{ !fromJSON(matrix.prerelease) }} ]]; then
+            gh variable set RELEASE_VERSION --body "${{ matrix.version }}"
+          else
+            gh variable set PRERELEASE_VERSION --body "${{ matrix.version }}"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.VARS_PAT }}
+
+  docker:
+    name: Build images
+    runs-on: ubuntu-latest
+    needs: [commit-and-push]
+
+    permissions:
+      packages: write
+
+    strategy:     
+      fail-fast: true
+      max-parallel: 1
+      matrix:
+        arch: ["amd64"]
+        include: ${{ fromJSON(needs.commit-and-push.outputs.tags) }}
+
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+
+      - name: Sanitize repo slug
+        uses: actions/github-script@v7
+        id: repo_slug
+        with:
+          result-encoding: string
+          script: return '${{ github.repository }}'.toLowerCase()
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ steps.repo_slug.outputs.result }}
+          tags: |
+            type=raw,priority=900,value=${{ matrix.version }}
+          labels: |
+            org.opencontainers.image.source="https://github.com/Lidarr/Lidarr"
+            org.opencontainers.image.url="https://lidarr.audio/"
+          flavor: |
+            suffix=-${{ matrix.branch }}
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.tag }}
+
+      - uses: dsaltares/fetch-gh-release-asset@1.1.2
+        with:
+          repo: 'Lidarr/Liddarr'
+          version: 'tags/${{ matrix.tag }}'
+          file: 'Lidarr.${{ matrix.branch }}.${{ matrix.version }}.linux-musl-core-x64.tar.gz'
+          target: 'lidarr.tar.gz'
+          token: ${{ github.token }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        continue-on-error: true
+        id: buildx1
+        with:
+          context: .
+          platforms: linux/${{ matrix.arch }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # Temp workaround for failed builds
+      - name: Wait to retry
+        if: steps.buildx1.outcome != 'success'
+        run: |
+          sleep 60
+
+      # Temp workaround for failed builds
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        if: steps.buildx1.outcome != 'success'
+        with:
+          context: .
+          platforms: linux/${{ matrix.arch }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
