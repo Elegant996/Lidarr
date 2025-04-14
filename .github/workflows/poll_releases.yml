@@ -55,7 +55,7 @@ jobs:
 
       - name: Check if tag exists
         uses: mukunku/tag-exists-action@v1.6.0
-        id: check_tag
+        id: check-tag
         with:
           tag: 'v${{ steps.upstream.outputs.version }}'
 
@@ -66,7 +66,7 @@ jobs:
             echo "${prerelease}-version=${version}" >> "$GITHUB_OUTPUT"
         env:
           prerelease: ${{ !fromJSON(matrix.prerelease) && 'release' || 'prerelease' }}
-          version: ${{ !fromJSON(steps.check_tag.outputs.exists) && steps.upstream.outputs.version || '' }}
+          version: ${{ !fromJSON(steps.check-tag.outputs.exists) && steps.upstream.outputs.version || '' }}
 
   commit-and-push:
     name: Push commits and release upstream version
