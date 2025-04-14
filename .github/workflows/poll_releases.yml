@@ -74,8 +74,8 @@ jobs:
     needs: [check-upstream]
 
     outputs:
-      matrix-branch: ${{ steps.tags.outputs.matrix-branch }}
-      matrix-include: ${{ steps.tags.outputs.matrix-include }}
+      matrix-branch: ${{ steps.tag-matrix.outputs.matrix-branch }}
+      matrix-include: ${{ steps.tag-matrix.outputs.matrix-include }}
 
     # Cannot use matrix in this instance
     env:
@@ -126,16 +126,16 @@ jobs:
           tag: 'v${{ env.prerelease-version }}'
 
       - name: Define tags
-        id: tags
+        id: tag-matrix
         run: |
           if [ -n "${release-version}" ] && [ -n "${prerelease-version}" ]; then
-            echo 'matrix-branch=["master","develop"]'
+            echo 'matrix-branch=["master","develop"]' >> $GITHUB_OUTPUT
             echo 'matrix-include=[{"tag":"v${{ env.release-version }}","version":"${{ env.release-version }}","branch":"${{ env.release-branch }}","prerelease":"false"},{"tag":"v${{ env.prerelease-version }}","version":"${{ env.prerelease-version }}","branch":"${{ env.prerelease-branch }}","prerelease":"true"}]' >> $GITHUB_OUTPUT
           elif [ -n "${release-version}" ]; then
-            echo 'matrix-branch=["master"]'
+            echo 'matrix-branch=["master"]' >> $GITHUB_OUTPUT
             echo 'matrix-include=[{"tag":"v${{ env.release-version }}","version":"${{ env.release-version }}","branch":"${{ env.release-branch }}","prerelease":"false"}]' >> $GITHUB_OUTPUT
           elif [ -n "${prerelease-version}" ]; then
-            echo 'matrix-branch=["develop"]'
+            echo 'matrix-branch=["develop"]' >> $GITHUB_OUTPUT
             echo 'matrix-include=[{"tag":"v${{ env.prerelease-version }}","version":"${{ env.prerelease-version }}","branch":"${{ env.prerelease-branch }}","prerelease":"true"}]' >> $GITHUB_OUTPUT
           else
             echo "There is no GitHub tag reference, skipping"
