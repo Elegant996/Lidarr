@@ -128,13 +128,13 @@ jobs:
       - name: Define tags
         id: tag-matrix
         run: |
-          if [ -n "${release-version}" ] && [ -n "${prerelease-version}" ]; then
+          if [[ -n "${release-version}" ]] && [[ -n "${prerelease-version}" ]]; then
             echo 'matrix-branch=["master","develop"]' >> $GITHUB_OUTPUT
             echo 'matrix-include=[{"tag":"v${{ env.release-version }}","version":"${{ env.release-version }}","branch":"${{ env.release-branch }}","prerelease":"false"},{"tag":"v${{ env.prerelease-version }}","version":"${{ env.prerelease-version }}","branch":"${{ env.prerelease-branch }}","prerelease":"true"}]' >> $GITHUB_OUTPUT
-          elif [ -n "${release-version}" ]; then
+          elif [[ -n "${release-version}" ]]; then
             echo 'matrix-branch=["master"]' >> $GITHUB_OUTPUT
             echo 'matrix-include=[{"tag":"v${{ env.release-version }}","version":"${{ env.release-version }}","branch":"${{ env.release-branch }}","prerelease":"false"}]' >> $GITHUB_OUTPUT
-          elif [ -n "${prerelease-version}" ]; then
+          elif [[ -n "${prerelease-version}" ]]; then
             echo 'matrix-branch=["develop"]' >> $GITHUB_OUTPUT
             echo 'matrix-include=[{"tag":"v${{ env.prerelease-version }}","version":"${{ env.prerelease-version }}","branch":"${{ env.prerelease-branch }}","prerelease":"true"}]' >> $GITHUB_OUTPUT
           else
@@ -181,7 +181,7 @@ jobs:
 
       - name: Update repository variables
         run: |
-          if [[ ${{ !fromJSON(matrix.prerelease) }} ]]; then
+          if [[ "${{ !fromJSON(matrix.prerelease) }}" == "true" ]]; then
             gh variable set RELEASE_VERSION --body "${{ matrix.version }}"
           else
             gh variable set PRERELEASE_VERSION --body "${{ matrix.version }}"
@@ -228,11 +228,11 @@ jobs:
             ghcr.io/${{ steps.repo-slug.outputs.result }}
           tags: |
             type=raw,priority=900,value=${{ matrix.version }}
+            type=raw,priority=800,value=${{ matrix.version }},suffix=-${{ matrix.branch }}
+            type=raw,priority=700,value=${{ matrix.branch }}
           labels: |
             org.opencontainers.image.source="https://github.com/Lidarr/Lidarr"
             org.opencontainers.image.url="https://lidarr.audio/"
-          flavor: |
-            suffix=-${{ matrix.branch }}
 
       - uses: actions/checkout@v4
         with:
