@@ -74,7 +74,8 @@ jobs:
     needs: [check-upstream]
 
     outputs:
-      tags: ${{ steps.tags.outputs.matrix }}
+      matrix-branch: ${{ steps.tags.outputs.matrix-branch }}
+      matrix-include: ${{ steps.tags.outputs.matrix-include }}
 
     # Cannot use matrix in this instance
     env:
@@ -128,11 +129,14 @@ jobs:
         id: tags
         run: |
           if [ -n "${release-version}" ] && [ -n "${prerelease-version}" ]; then
-            echo 'matrix=[{"tag":"v${{ env.release-version }}","version":"${{ env.release-version }}","branch":"${{ env.release-branch }}","prerelease":"false"},{"tag":"v${{ env.prerelease-version }}","version":"${{ env.prerelease-version }}","branch":"${{ env.prerelease-branch }}","prerelease":"true"}]' >> $GITHUB_OUTPUT
+            echo 'matrix-branch=["master","develop"]'
+            echo 'matrix-include=[{"tag":"v${{ env.release-version }}","version":"${{ env.release-version }}","branch":"${{ env.release-branch }}","prerelease":"false"},{"tag":"v${{ env.prerelease-version }}","version":"${{ env.prerelease-version }}","branch":"${{ env.prerelease-branch }}","prerelease":"true"}]' >> $GITHUB_OUTPUT
           elif [ -n "${release-version}" ]; then
-            echo 'matrix=[{"tag":"v${{ env.release-version }}","version":"${{ env.release-version }}","branch":"${{ env.release-branch }}","prerelease":"false"}]' >> $GITHUB_OUTPUT
+            echo 'matrix-branch=["master"]'
+            echo 'matrix-include=[{"tag":"v${{ env.release-version }}","version":"${{ env.release-version }}","branch":"${{ env.release-branch }}","prerelease":"false"}]' >> $GITHUB_OUTPUT
           elif [ -n "${prerelease-version}" ]; then
-            echo 'matrix=[{"tag":"v${{ env.prerelease-version }}","version":"${{ env.prerelease-version }}","branch":"${{ env.prerelease-branch }}","prerelease":"true"}]' >> $GITHUB_OUTPUT
+            echo 'matrix-branch=["develop"]'
+            echo 'matrix-include=[{"tag":"v${{ env.prerelease-version }}","version":"${{ env.prerelease-version }}","branch":"${{ env.prerelease-branch }}","prerelease":"true"}]' >> $GITHUB_OUTPUT
           else
             echo "There is no GitHub tag reference, skipping"
           fi
@@ -147,10 +151,10 @@ jobs:
     needs: [commit-and-push]
 
     strategy:
-      fail-fast: true
       max-parallel: 1
+      fail-fast: true
       matrix:
-        include: ${{ fromJSON(needs.commit-and-push.outputs.tags) }}
+        include: ${{ fromJSON(needs.commit-and-push.outputs.matrix-include) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -185,7 +189,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.VARS_PAT }}
 
-  docker:
+  build:
     name: Build images
     runs-on: ubuntu-latest
     needs: [commit-and-push]
@@ -194,11 +198,12 @@ jobs:
       packages: write
 
     strategy:     
-      fail-fast: true
       max-parallel: 1
+      fail-fast: true
       matrix:
         arch: ["amd64"]
-        include: ${{ fromJSON(needs.commit-and-push.outputs.tags) }}
+        branch: ${{ fromJSON(needs.commit-and-push.outputs.matrix-branch) }}
+        include: ${{ fromJSON(needs.commit-and-push.outputs.matrix-include) }}
 
     steps:
       - name: Login to GHCR
