@@ -62,8 +62,8 @@ jobs:
       - name: Store releases
         id: releases
         run: |
-            echo "${prerelease}_branch=${{ matrix.branch }}" >> "$GITHUB_OUTPUT"
-            echo "${prerelease}_version=${version}" >> "$GITHUB_OUTPUT"
+            echo "${prerelease}-branch=${{ matrix.branch }}" >> "$GITHUB_OUTPUT"
+            echo "${prerelease}-version=${version}" >> "$GITHUB_OUTPUT"
         env:
           prerelease: ${{ !fromJSON(matrix.prerelease) && 'release' || 'prerelease' }}
           version: ${{ !fromJSON(steps.check_tag.outputs.exists) && steps.upstream.outputs.version || '' }}
