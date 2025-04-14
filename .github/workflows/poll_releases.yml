@@ -144,6 +144,8 @@ jobs:
       - name: Push commits
         run: |
           git push
+        env:
+          GH_TOKEN: ${{ secrets.WF_PAT }}
 
   publish-release:
     name: Publish releases
