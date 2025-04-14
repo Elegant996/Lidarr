@@ -86,6 +86,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.WF_PAT }}
     
       - name: Update Readme (release)
         if: env.release-version != ''
