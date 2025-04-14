@@ -127,7 +127,7 @@ jobs:
       - name: Define tags
         id: tags
         run: |
-          if [ -z "${{ env.release-version }}" ] && [ -z "${{ env.prerelease-version }}" ]; then
+          if [ -z "${release-version}" ] && [ -z "${prerelease-version}" ]; then
             echo 'matrix=[{"tag":"v${{ env.release-version }}","version":"${{ env.release-version }}","branch":"${{ env.release-branch }}","prerelease":"false"},{"tag":"v${{ env.prerelease-version }}","version":"${{ env.prerelease-version }}","branch":"${{ env.prerelease-branch }}","prerelease":"true"}]' >> $GITHUB_OUTPUT
           elif [ -z "${prerelease-version}" ]; then
             echo 'matrix=[{"tag":"v${{ env.release-version }}","version":"${{ env.release-version }}","branch":"${{ env.release-branch }}","prerelease":"false"}]' >> $GITHUB_OUTPUT
@@ -136,6 +136,9 @@ jobs:
           else
             echo "There is no GitHub tag reference, skipping"
           fi
+        env:
+          release-version: ${{ env.release-version }}
+          prerelease-version: ${{ env.prerelease-version }}
 
       - name: Push commits
         run: |
