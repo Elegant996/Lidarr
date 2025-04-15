@@ -142,7 +142,8 @@ jobs:
           fi
 
       - name: Push commits
-        run: |
+        if: env.release-version != '' || env.prerelease-version != ''
+        run: |        
           git push
 
   publish-release:
