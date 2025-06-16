@@ -13,6 +13,6 @@ docker pull ghcr.io/elegant996/lidarr:master
 
 For `develop` branch pre-releases use:
 ```
-docker pull ghcr.io/elegant996/lidarr:2.12.3.4654
+docker pull ghcr.io/elegant996/lidarr:2.13.0.4664
 docker pull ghcr.io/elegant996/lidarr:develop
 ```
